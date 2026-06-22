@@ -19,6 +19,9 @@ fn print_board_pretty(board: &chess::Board) {
             }
         } else if i == '/' {
             println!();
+        } else if i == ' ' {
+            println!();
+            return;
         } else {
             print!("{i}");
         }
