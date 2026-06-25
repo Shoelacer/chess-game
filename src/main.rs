@@ -99,8 +99,9 @@ async fn request_move(game: &Game, player: &mut WebSocketStream<TcpStream>) -> C
         if let WsMessage::Text(text) = msg {
             println!("Received move: {}", text);
 
-            return ChessMove::from_san(&game.current_position(), text.trim())
-                .expect("Invalid move");
+            if let Ok(mv) = ChessMove::from_san(&game.current_position(), text.trim()) {
+                return mv;
+            }
         }
     }
 
