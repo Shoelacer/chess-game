@@ -1,12 +1,32 @@
-use std::{panic::PanicHookInfo, str::FromStr};
-
 use chess::{ChessMove, Color, File, Game, Rank, Square};
-use tokio::{self};
+use std::{panic::PanicHookInfo, str::FromStr};
+use tokio::net::TcpStream;
+use tokio::{self, net::TcpListener};
+use tokio_tungstenite::accept_async;
+use tokio_tungstenite::tungstenite::Message as WsMessage;
 
 #[tokio::main]
-async fn main() {
-    let mut game = Game::new();
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let addr = "0.0.0.0:8080";
+    let listener = TcpListener::bind(addr).await?;
+    println!("Server listening on ws://{}", addr);
 
+    let (stream1, addr1) = listener.accept().await?;
+    println!("Player 1 connected: {}", addr1);
+
+    let (stream2, addr2) = listener.accept().await?;
+    println!("Player 2 connected: {}", addr2);
+
+    let ws1 = accept_async(stream1).await?.into_inner();
+    let ws2 = accept_async(stream2).await?.into_inner();
+
+    play_game(ws1, ws2);
+
+    Ok(())
+}
+
+fn play_game(player_one: TcpStream, player_two: TcpStream) {
+    let mut game = Game::new();
     print_board_pretty(&game.current_position());
     while game.result().is_none() {
         print_current_move_info(&game);
