@@ -1,10 +1,10 @@
-use chess::{ChessMove, Color, File, Game, Rank, Square};
+use chess::{ChessMove, Color, File, Game, GameResult, Rank, Square};
 use futures_util::stream::SplitSink;
 use futures_util::{SinkExt, StreamExt};
+use serde_json::json;
 use std::{panic::PanicHookInfo, str::FromStr};
 use tokio::io::AsyncReadExt;
 use tokio::net::TcpStream;
-use tokio::net::tcp::ReadHalf;
 use tokio::{self, net::TcpListener};
 use tokio_tungstenite::WebSocketStream;
 use tokio_tungstenite::accept_async;
@@ -22,8 +22,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (stream2, addr2) = listener.accept().await?;
     println!("Player 2 connected: {}", addr2);
 
-    let mut ws1 = accept_async(stream1).await?;
-    let mut ws2 = accept_async(stream2).await?;
+    let ws1 = accept_async(stream1).await?;
+    let ws2 = accept_async(stream2).await?;
 
     play_game(ws1, ws2).await;
 
@@ -46,8 +46,47 @@ async fn play_game(
             game.make_move(request_move(&game, &mut player_two).await);
         }
         print_board_pretty(&game.current_position());
+        player_one
+            .send(WsMessage::text(
+                json!({"type": "board", "fen": game.current_position().to_string()}).to_string(),
+            ))
+            .await
+            .unwrap();
+        player_two
+            .send(WsMessage::text(
+                json!({"type": "board", "fen": game.current_position().to_string()}).to_string(),
+            ))
+            .await
+            .unwrap();
     }
+
+    let mut game_result = String::new();
+    if game.result().unwrap() == GameResult::WhiteCheckmates
+        || game.result().unwrap() == GameResult::BlackResigns
+    {
+        game_result.push_str("White Wins!");
+    } else if game.result().unwrap() == GameResult::BlackCheckmates
+        || game.result().unwrap() == GameResult::WhiteResigns
+    {
+        game_result.push_str("Black Wins!");
+    } else {
+        game_result.push_str("Draw!");
+    }
+
     println!("{:?}", game.result().unwrap());
+
+    player_one
+        .send(WsMessage::text(
+            json!({"type": "result", "result":game_result}).to_string(),
+        ))
+        .await
+        .unwrap();
+    player_two
+        .send(WsMessage::text(
+            json!({"type": "result", "result":game_result}).to_string(),
+        ))
+        .await
+        .unwrap();
 }
 
 fn print_board_pretty(board: &chess::Board) {
@@ -80,19 +119,6 @@ fn print_current_move_info(game: &Game) {
 }
 
 async fn request_move(game: &Game, player: &mut WebSocketStream<TcpStream>) -> ChessMove {
-    let mut input = String::new();
-    let mut move_coords = "";
-
-    /*while ChessMove::from_san(&game.current_position(), move_coords).is_err() {
-        input.clear();
-        println!("Enter a valid move: ");
-        std::io::stdin()
-            .read_line(&mut input)
-            .expect("Couldn't read the move");
-        move_coords = input.trim_end();
-    }*/
-    //let mut move_coords = ChessMove::from_san(&game.current_position(), "a3").unwrap();
-
     while let Some(msg) = player.next().await {
         let msg = msg.unwrap();
 
