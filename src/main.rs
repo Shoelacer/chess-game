@@ -19,11 +19,27 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (stream1, addr1) = listener.accept().await?;
     println!("Player 1 connected: {}", addr1);
 
+    let mut ws1 = accept_async(stream1).await?;
+    ws1.send(WsMessage::text(
+        json!({"type": "welcome","color":"white"}).to_string(),
+    ))
+    .await
+    .unwrap();
+    ws1.send(WsMessage::text(
+        json!({"type": "status","text":"Waiting for Player Two..."}).to_string(),
+    ))
+    .await
+    .unwrap();
+
     let (stream2, addr2) = listener.accept().await?;
     println!("Player 2 connected: {}", addr2);
 
-    let ws1 = accept_async(stream1).await?;
-    let ws2 = accept_async(stream2).await?;
+    let mut ws2 = accept_async(stream2).await?;
+    ws2.send(WsMessage::text(
+        json!({"type": "welcome","color":"black"}).to_string(),
+    ))
+    .await
+    .unwrap();
 
     play_game(ws1, ws2).await;
 
@@ -35,8 +51,6 @@ async fn play_game(
     mut player_two: WebSocketStream<TcpStream>,
 ) {
     let mut game = Game::new();
-    //let (mut read_one, mut write_one) = player_one.split();
-    //let (mut read_two, mut write_two) = player_two.split();
     print_board_pretty(&game.current_position());
     while game.result().is_none() {
         print_current_move_info(&game);
