@@ -20,18 +20,13 @@ ws.onmessage = (event) => {
     let board = "";
     let fen = data.fen;
     for (let i = 0; i < fen.length; i++) {
-      console.log("next" + i);
       if (fen.charAt(i) >= "0" && fen.charAt(i) <= "9") {
         board += " ".repeat(parseInt(fen.charAt(i)));
-        console.log("space");
       } else if (fen.charAt(i) === "/") {
-        console.log("line");
       } else if (fen.charAt(i) === " ") {
-        console.log("done");
         i = fen.length;
       } else {
-        console.log("piece");
-        board += fen.charAt(i);
+        board += fenPieceToUnicode(fen.charAt(i));
       }
     }
 
@@ -69,4 +64,19 @@ for (let i = 0; i < 8; i++) {
       }
     });
   }
+}
+
+function fenPieceToUnicode(piece) {
+  if (piece === "K") return "♔";
+  if (piece === "Q") return "♕";
+  if (piece === "R") return "♖";
+  if (piece === "B") return "♗";
+  if (piece === "N") return "♘";
+  if (piece === "P") return "♙";
+  if (piece === "k") return "♚";
+  if (piece === "q") return "♛";
+  if (piece === "r") return "♜";
+  if (piece === "b") return "♝";
+  if (piece === "n") return "♞";
+  if (piece === "p") return "♟";
 }
