@@ -138,10 +138,13 @@ async fn request_move(game: &Game, player: &mut WebSocketStream<TcpStream>) -> C
 
         if let WsMessage::Text(text) = msg {
             println!("Received move: {}", text);
-
             if let Ok(mv) = ChessMove::from_san(&game.current_position(), text.trim()) {
                 return mv;
             }
+            if let Ok(mv) = ChessMove::from_str(text.trim()) {
+                return mv;
+            }
+
             player
                 .send(WsMessage::text(
                     json!({"type": "error", "message": "Illegal move"}).to_string(),
