@@ -56,9 +56,25 @@ for (let i = 0; i < 8; i++) {
     console.log(FILES.charAt(8 - i - 1) + j);
     cell.addEventListener("click", () => {
       console.log(cell.id);
-      move += cell.id;
+      if (move != "") {
+        if (
+          document.getElementById(move).getHTML() == "♟" ||
+          document.getElementById(move).getHTML() == "♙"
+        ) {
+          if (cell.id.substring(1) == "8" || cell.id.substring(1) == "1") {
+            let promote = prompt("What piece you want? (r/n/b/q)");
+            move += cell.id + promote;
+          } else {
+            move += cell.id;
+          }
+        } else {
+          move += cell.id;
+        }
+      } else {
+        move += cell.id;
+      }
       console.log(move);
-      if (move.length == 4) {
+      if (move.length >= 4) {
         ws.send(move);
         move = "";
       }
